@@ -1,0 +1,5 @@
+name = GSB Public Brochure List
+description = Custom checkboxes for program brochures.
+core = 7.x
+package = GSB
+project = "gsb_public_brochure_list"

@@ -1,0 +1,166 @@
+<?php
+/**
+ * Implementation of hook_webform_select_options_info().
+ * See webform/webform_hooks.php for further information on this hook in the Webform API.
+ */
+function gsb_public_brochure_list_webform_select_options_info() {
+  $items = array();
+  $items['program_brochure'] = array(
+    'title' => t('Programs'),
+    'options callback' => 'gsb_public_brochure_list_pre_build_brochure_list'
+  );
+  return $items;
+}
+
+/**
+ * Build an options list to be used with webforms select list based in drupal roles
+ */
+function gsb_public_brochure_list_pre_build_brochure_list() {
+  $select = db_select('node','n');
+  $select->fields('n', array('title', 'nid'));
+  $select->leftJoin('field_data_field_brochure_program_topics', 'pt', 'n.nid = pt.entity_id AND pt.deleted = 0');
+  $select->leftJoin('taxonomy_term_data', 'ttd_pt', 'pt.field_brochure_program_topics_tid = ttd_pt.tid');
+  $select->leftJoin('field_data_field_brochure_options', 'bo', 'n.nid = bo.entity_id AND bo.deleted = 0');
+  $select->leftJoin('field_data_field_brochure_pdf', 'bp', 'n.nid = bp.entity_id AND bp.deleted = 0');
+  $select->leftJoin('field_data_field_program', 'pr', 'n.nid = pr.field_program_target_id AND pr.deleted = 0');
+  $select->leftJoin('field_data_field_display_on_finder_select', 'df', 'df.entity_id = pr.entity_id AND df.deleted = 0');
+  $select->leftJoin('field_data_field_apower_id', 'ap', 'ap.entity_id = pr.entity_id AND pr.deleted = 0');
+  $select->addField('ttd_pt', 'tid', 'program_topics_tid');
+  $select->addField('ttd_pt', 'name', 'program_topics');
+  $select->addField('bo', 'field_brochure_options_value', 'brochure_option');
+  $select->addField('ap', 'field_apower_id_value', 'apower_id');
+  $select->condition('n.status', 1);
+  $select->condition('n.type', 'program');
+  $select->condition('bo.field_brochure_options_value', 'brochure_link_ee_lead_form');
+  $select->condition('df.field_display_on_finder_select_value', 'visible');
+  $select->isNotNull('bp.field_brochure_pdf_fid');
+  $select->isNotNull('ap.field_apower_id_value');
+
+  $query = $select->execute();
+  $records = $query->fetchAll();
+  $contentarray = array();
+  $topics = array();
+  foreach ($records as $record) {
+    if(!array_key_exists($record->title . '+' .  $record->nid, $topics)) {
+      $topics[$record->title . '+' .  $record->nid] = $record->program_topics;
+    }
+  }
+  foreach ($topics as $key => $value) {
+    if (!empty($value)) {
+      $return[$value][] = $key;
+    }
+  }
+  foreach ($return as $topic => $programs) {
+    $contentarray['topic--'.$topic] = t($topic);
+    asort($programs);
+    foreach ($programs as $program) {
+      $program_parts = explode('+' , $program);
+      $contentarray[$program_parts[1]] = t($program_parts[0]);
+    }
+  }
+  return $contentarray;
+
+}
+
+function gsb_public_brochure_list_form_alter(&$form, &$form_state, $form_id)
+{
+  if($form['form_id']['#value'] == "webform_client_form_410146") {
+    $form['#attached']['js'][] = drupal_get_path('module', 'gsb_public_brochure_list') . '/js/gsb_public_brochure_list.js';
+    array_unshift($form['#submit'], 'gsb_public_brochure_list_form_submit');
+  }
+  return $form;
+}
+
+function gsb_public_brochure_list_form_submit($form, &$form_state) {
+  $program_ids = ($form_state['complete form']['submitted']['brochure_list']['#value']);
+  $select = db_select('node','n');
+  $select->fields('n', array('title', 'nid'));
+  $select->leftJoin('field_data_field_program', 'pr', 'n.nid = pr.field_program_target_id AND pr.deleted = 0');
+  $select->leftJoin('field_data_field_display_on_finder_select', 'df', 'df.entity_id = pr.entity_id AND df.deleted = 0');
+  $select->leftJoin('field_data_field_apower_id', 'ap', 'ap.entity_id = pr.entity_id AND pr.deleted = 0');
+  $select->addField('ap', 'field_apower_id_value', 'apower_id');
+  $select->condition('n.status', 1);
+  $select->condition('n.type', 'program');
+  $select->condition('n.nid', $program_ids , 'IN');
+  $select->condition('df.field_display_on_finder_select_value', 'visible');
+  $select->isNotNull('ap.field_apower_id_value');
+  $query = $select->execute();
+  $records = $query->fetchAll();
+  $apower_ids = array();
+  foreach ($records as $record) {
+    if (!in_array($record->apower_id, $apower_ids)) {
+      $apower_ids[] = $record->apower_id;
+    }
+  }
+  gsb_public_brochure_list_write_to_apower($form, $form_state, $apower_ids);
+
+}
+function gsb_public_brochure_list_write_to_apower($form, &$form_state, $apower_ids) {
+  $options = _extract_select_options ($form_state['webform']['component_tree']['children'][17]['children'][1]['extra']['items']);
+
+  // output key and value of chosen select option
+  $chosen = $options[$form_state['complete form']['submitted']['your_contact_information']['prefix']['#value']];
+  $params = array();
+  $params['submission_type']="brochure" ;  //"mailing" or "brochure"
+  $params['salutation']=$chosen;
+  $params['first_name']=$form_state['complete form']['submitted']['your_contact_information']['first_name']['#value'];
+  $params['middle_initial']="";
+  $params['last_name']=$form_state['complete form']['submitted']['your_contact_information']['last_name']['#value'];
+  $params['title']=$form_state['complete form']['submitted']['your_contact_information']['job_title_or_position']['#value'];
+  $params['email']=$form_state['complete form']['submitted']['your_contact_information']['email']['#value'];
+  $params['company']=$form_state['complete form']['submitted']['your_contact_information']['company_or_organization']['#value'];
+  $params['companyWeb']="";
+  $params['address_1']=$form_state['complete form']['submitted']['your_contact_information']['address']['street_address']['#value'];
+  $params['address_2']="";
+  $params['city']=$form_state['complete form']['submitted']['your_contact_information']['address']['city']['#value'];
+  $params['state']=$form_state['complete form']['submitted']['your_contact_information']['address']['state_us']['#value'];
+  $params['state_international']=$form_state['complete form']['submitted']['your_contact_information']['address']['region_or_province_non_us']['#value'];
+  $params['zip']="";
+  $params['country']=$form_state['complete form']['submitted']['your_contact_information']['address']['country']['#value'];
+  $params['work_phone']=$form_state['complete form']['submitted']['your_contact_information']['business_phone']['#value'];
+  $params['fax']="";
+  $params['work_with_hr']="no"; //"yes" or "no";
+  $params['comments']="";
+
+  $params['key'] = "V&1#$2--)WEB";
+  foreach($apower_ids as $id){
+    //APower ID?
+    $params['course_id']=$id;
+
+  $paramStr = json_encode($params);
+
+  $url = "https://exedonline-qa.stanford.edu/service.svc/rest/web_submit_form";
+
+  $ch = curl_init() ;
+  curl_setopt ($ch, CURLOPT_POST, 1);
+  curl_setopt ($ch, CURLOPT_POSTFIELDS,$paramStr);
+  curl_setopt($ch, CURLOPT_URL, $url) ;
+  curl_setopt ($ch, CURLOPT_HTTPHEADER, Array("Content-Type: application/json"));
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+  curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+  curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+  $response = curl_exec( $ch) ;
+#echo 'Curl error: ' . curl_error($ch);
+  curl_close($ch) ;
+  echo $response;
+  }
+
+}
+
+// declare function with text area content as parameter to get the prefix value
+function _extract_select_options ($prefix) {
+  $options = $pairs = $temp_array = array();
+
+  // split text into chunks after each line-break;
+  // if not visible here, use "backslash n" as explode parameter
+  $pairs = explode("\n", $prefix);
+
+  // split each line into pairs of key and value
+  foreach($pairs as $pair) {
+    $temp_array = explode('|', $pair);
+    $options[trim($temp_array[0])] = $temp_array[1];
+  }
+
+  return $options;
+
+}
