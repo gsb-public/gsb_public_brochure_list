@@ -121,16 +121,10 @@ function gsb_public_brochure_list_write_to_apower($form, &$form_state, $apower_i
   $params['fax']="";
   $params['work_with_hr']="no"; //"yes" or "no";
   $params['comments']="";
-
-  $params['key'] = "V&1#$2--)WEB";
-  foreach($apower_ids as $id){
-    //APower ID?
-    $params['course_id']=$id;
-
+  $params['key'] = variable_get('apower_key');
+  $params['course_id']=$apower_ids;
   $paramStr = json_encode($params);
-
-  $url = "https://exedonline-qa.stanford.edu/service.svc/rest/web_submit_form";
-
+  $url = variable_get('apower_url');
   $ch = curl_init() ;
   curl_setopt ($ch, CURLOPT_POST, 1);
   curl_setopt ($ch, CURLOPT_POSTFIELDS,$paramStr);
@@ -140,10 +134,9 @@ function gsb_public_brochure_list_write_to_apower($form, &$form_state, $apower_i
   curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
   curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
   $response = curl_exec( $ch) ;
-#echo 'Curl error: ' . curl_error($ch);
+  #echo 'Curl error: ' . curl_error($ch);
   curl_close($ch) ;
   echo $response;
-  }
 
 }
 
