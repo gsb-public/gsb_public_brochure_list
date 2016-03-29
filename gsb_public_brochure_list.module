@@ -35,6 +35,7 @@ function gsb_public_brochure_list_pre_build_brochure_list() {
   $select->condition('df.field_display_on_finder_select_value', 'visible');
   $select->isNotNull('bp.field_brochure_pdf_fid');
   $select->isNotNull('ap.field_apower_id_value');
+  $select->orderBy('program_topics','ASC');
 
   $query = $select->execute();
   $records = $query->fetchAll();
