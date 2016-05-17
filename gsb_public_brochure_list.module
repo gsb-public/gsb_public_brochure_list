@@ -69,6 +69,9 @@ function gsb_public_brochure_list_form_alter(&$form, &$form_state, $form_id)
     $form['#attached']['js'][] = drupal_get_path('module', 'gsb_public_brochure_list') . '/js/gsb_public_brochure_list.js';
     array_unshift($form['#submit'], 'gsb_public_brochure_list_form_submit');
   }
+  if($form['form_id']['#value'] == "webform_client_form_411531") {
+    array_unshift($form['#submit'], 'gsb_public_brochure_list_mailing_form_submit');
+  }
   return $form;
 }
 
@@ -109,15 +112,17 @@ function gsb_public_brochure_list_write_to_apower($form, &$form_state, $apower_i
   $params['last_name']=$form_state['complete form']['submitted']['your_contact_information']['last_name']['#value'];
   $params['title']=$form_state['complete form']['submitted']['your_contact_information']['job_title_or_position']['#value'];
   $params['email']=$form_state['complete form']['submitted']['your_contact_information']['email']['#value'];
+  //$params['linkedin']=$form_state['complete form']['submitted']['your_contact_information']['linkedin_profile_url']['#value'];
   $params['company']=$form_state['complete form']['submitted']['your_contact_information']['company_or_organization']['#value'];
-  $params['companyWeb']="";
+  $params['companyWeb']=$form_state['complete form']['submitted']['your_contact_information']['company_website_address']['#value'];
   $params['address_1']=$form_state['complete form']['submitted']['your_contact_information']['address']['street_address']['#value'];
   $params['address_2']="";
   $params['city']=$form_state['complete form']['submitted']['your_contact_information']['address']['city']['#value'];
   $params['state']=$form_state['complete form']['submitted']['your_contact_information']['address']['state_us']['#value'];
   $params['state_international']=$form_state['complete form']['submitted']['your_contact_information']['address']['region_or_province_non_us']['#value'];
-  $params['zip']="";
-  $params['country']=$form_state['complete form']['submitted']['your_contact_information']['address']['country']['#value'];
+  $params['zip']=$form_state['complete form']['submitted']['your_contact_information']['address']['zip_postal_code']['#value'];
+  $country_id = $form_state['complete form']['submitted']['your_contact_information']['address']['country']['#value'];
+  $params['country']=$form_state['complete form']['submitted']['your_contact_information']['address']['country']['#options'][$country_id];
   $params['work_phone']=$form_state['complete form']['submitted']['your_contact_information']['business_phone']['#value'];
   $params['fax']="";
   $params['work_with_hr']="no"; //"yes" or "no";
@@ -157,4 +162,50 @@ function _extract_select_options ($prefix) {
 
   return $options;
 
+}
+
+function gsb_public_brochure_list_mailing_form_submit($form, &$form_state) {
+  $options = _extract_select_options ($form_state['webform']['component_tree']['children'][18]['children'][2]['extra']['items']);
+
+  // output key and value of chosen select option
+  $chosen = $options[$form_state['input']['submitted']['about_you']['prefix']];
+  $params = array();
+  $params['submission_type']="mailing";  //"mailing" or "brochure"
+  $params['salutation']=$chosen;
+  $params['first_name']=$form_state['input']['submitted']['about_you']['first_name'];
+  $params['middle_initial']=$form_state['input']['submitted']['about_you']['middle_initial'];
+  $params['last_name']=$form_state['input']['submitted']['about_you']['last_name'];
+  $params['title']=$form_state['input']['submitted']['about_you']['job_title'];
+  $params['email']=$form_state['input']['submitted']['about_you']['email_address'];
+  $params['company']=$form_state['input']['submitted']['about_your_company']['company_organization_name'];
+  $params['companyWeb']=$form_state['input']['submitted']['about_your_company']['website_address'];
+  $params['address_1']=$form_state['input']['submitted']['about_your_company']['street_address'];
+  $params['address_2']="";
+  $params['city']=$form_state['input']['submitted']['about_your_company']['city'];
+  $params['state']=$form_state['input']['submitted']['about_your_company']['state'];
+  $params['state_international']=$form_state['input']['submitted']['about_your_company']['region_or_province'];
+  $params['zip']=$form_state['input']['submitted']['about_your_company']['zip_postal_code'];
+  $country_options = _extract_select_options ($form_state['webform']['component_tree']['children'][9]['children'][10]['extra']['items']);
+  $country_id = $form_state['input']['submitted']['about_your_company']['country'];
+  $params['country']=$country_options[$country_id];
+  $params['work_phone']=$form_state['input']['submitted']['about_you']['business_phone'];
+  $params['fax']=$form_state['input']['submitted']['about_you']['business_fax'];
+  $params['work_with_hr']="no"; //"yes" or "no";
+  $params['comments']="";
+  $params['key'] = variable_get('apower_key');
+  $paramStr = json_encode($params);
+
+  $url = variable_get('apower_url');
+  $ch = curl_init() ;
+  curl_setopt ($ch, CURLOPT_POST, 1);
+  curl_setopt ($ch, CURLOPT_POSTFIELDS,$paramStr);
+  curl_setopt($ch, CURLOPT_URL, $url) ;
+  curl_setopt ($ch, CURLOPT_HTTPHEADER, Array("Content-Type: application/json"));
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+  curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+  curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+  $response = curl_exec( $ch) ;
+  #echo 'Curl error: ' . curl_error($ch);
+  curl_close($ch) ;
+  echo $response;
 }
