@@ -112,7 +112,7 @@ function gsb_public_brochure_list_write_to_apower($form, &$form_state, $apower_i
   $params['last_name']=$form_state['complete form']['submitted']['your_contact_information']['last_name']['#value'];
   $params['title']=$form_state['complete form']['submitted']['your_contact_information']['job_title_or_position']['#value'];
   $params['email']=$form_state['complete form']['submitted']['your_contact_information']['email']['#value'];
-  //$params['linkedin']=$form_state['complete form']['submitted']['your_contact_information']['linkedin_profile_url']['#value'];
+  $params['linkedin_url']=$form_state['complete form']['submitted']['your_contact_information']['linkedin_profile_url']['#value'];
   $params['company']=$form_state['complete form']['submitted']['your_contact_information']['company_or_organization']['#value'];
   $params['companyWeb']=$form_state['complete form']['submitted']['your_contact_information']['company_website_address']['#value'];
   $params['address_1']=$form_state['complete form']['submitted']['your_contact_information']['address']['street_address']['#value'];
