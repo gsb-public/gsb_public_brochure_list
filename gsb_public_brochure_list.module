@@ -91,6 +91,13 @@ function gsb_public_brochure_list_form_submit($form, &$form_state) {
   $query = $select->execute();
   $records = $query->fetchAll();
   $apower_ids = array();
+  if ($_GET['pid']) {
+    foreach ($records as $record) {
+      if ($record->nid == $_GET['pid']){
+        $apower_ids[] = $record->apower_id;
+      }
+    }
+  }
   foreach ($records as $record) {
     if (!in_array($record->apower_id, $apower_ids)) {
       $apower_ids[] = $record->apower_id;
@@ -177,13 +184,14 @@ function gsb_public_brochure_list_mailing_form_submit($form, &$form_state) {
   $params['last_name']=$form_state['input']['submitted']['about_you']['last_name'];
   $params['title']=$form_state['input']['submitted']['about_you']['job_title'];
   $params['email']=$form_state['input']['submitted']['about_you']['email_address'];
+  $params['linkedin_url']='';
   $params['company']=$form_state['input']['submitted']['about_your_company']['company_organization_name'];
   $params['companyWeb']=$form_state['input']['submitted']['about_your_company']['website_address'];
   $params['address_1']=$form_state['input']['submitted']['about_your_company']['street_address'];
   $params['address_2']="";
   $params['city']=$form_state['input']['submitted']['about_your_company']['city'];
   $params['state']=$form_state['input']['submitted']['about_your_company']['state'];
-  $params['state_international']=$form_state['input']['submitted']['about_your_company']['region_or_province'];
+  $params['state_international']=($form_state['input']['submitted']['about_your_company']['region_or_province']) ? $form_state['input']['submitted']['about_your_company']['region_or_province'] : '';
   $params['zip']=$form_state['input']['submitted']['about_your_company']['zip_postal_code'];
   $country_options = _extract_select_options ($form_state['webform']['component_tree']['children'][9]['children'][10]['extra']['items']);
   $country_id = $form_state['input']['submitted']['about_your_company']['country'];
@@ -193,9 +201,8 @@ function gsb_public_brochure_list_mailing_form_submit($form, &$form_state) {
   $params['work_with_hr']="no"; //"yes" or "no";
   $params['comments']="";
   $params['key'] = variable_get('apower_key');
-  $paramStr = json_encode($params);
-
   $url = variable_get('apower_url');
+  $paramStr = json_encode($params);
   $ch = curl_init() ;
   curl_setopt ($ch, CURLOPT_POST, 1);
   curl_setopt ($ch, CURLOPT_POSTFIELDS,$paramStr);
@@ -208,4 +215,5 @@ function gsb_public_brochure_list_mailing_form_submit($form, &$form_state) {
   #echo 'Curl error: ' . curl_error($ch);
   curl_close($ch) ;
   echo $response;
+
 }
