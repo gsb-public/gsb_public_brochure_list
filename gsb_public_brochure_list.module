@@ -80,29 +80,48 @@ function gsb_public_brochure_list_form_submit($form, &$form_state) {
   $select = db_select('node','n');
   $select->fields('n', array('title', 'nid'));
   $select->leftJoin('field_data_field_program', 'pr', 'n.nid = pr.field_program_target_id AND pr.deleted = 0');
+  $select->addField('pr', 'field_program_target_id', 'program_id');
   $select->leftJoin('field_data_field_display_on_finder_select', 'df', 'df.entity_id = pr.entity_id AND df.deleted = 0');
   $select->leftJoin('field_data_field_apower_id', 'ap', 'ap.entity_id = pr.entity_id AND pr.deleted = 0');
   $select->addField('ap', 'field_apower_id_value', 'apower_id');
+  //Dates
+  $select->leftJoin('field_data_field_instance_date', 'dt', 'dt.entity_id = pr.entity_id AND dt.deleted = 0');
+  $select->addField('dt', 'field_instance_date_value', 'start_date');
+  $select->addField('dt', 'field_instance_date_value2', 'end_date');
+  //Text Date
+  $select->leftJoin('field_data_field_instance_text', 'tdt', 'tdt.entity_id = pr.entity_id AND tdt.deleted = 0');
+  $select->addField('tdt', 'field_instance_text_value', 'text_date');
+
   $select->condition('n.status', 1);
   $select->condition('n.type', 'program');
   $select->condition('n.nid', $program_ids , 'IN');
   $select->condition('df.field_display_on_finder_select_value', 'visible');
   $select->isNotNull('ap.field_apower_id_value');
+  $today = date("Y-m-d");
+  $select->condition(db_or()->condition('dt.field_instance_date_value', $today, '>=')->isNotNull('tdt.field_instance_text_value'));
+  $select->orderBy('text_date','ASC');
+  $select->orderBy('program_id','ASC');
+  $select->orderBy('start_date','ASC');
+
   $query = $select->execute();
   $records = $query->fetchAll();
   $apower_ids = array();
+  $program_ids = array();
   if ($_GET['pid']) {
     foreach ($records as $record) {
       if ($record->nid == $_GET['pid']){
         $apower_ids[] = $record->apower_id;
+        $program_ids[] = $record->program_id;
       }
     }
   }
   foreach ($records as $record) {
-    if (!in_array($record->apower_id, $apower_ids)) {
+    if (!in_array($record->apower_id, $apower_ids) && !in_array($record->program_id, $program_ids) ) {
       $apower_ids[] = $record->apower_id;
+      $program_ids[] = $record->program_id;
     }
   }
+
   gsb_public_brochure_list_write_to_apower($form, $form_state, $apower_ids);
 
 }
