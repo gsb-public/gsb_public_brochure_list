@@ -107,26 +107,30 @@ function gsb_public_brochure_list_form_submit($form, &$form_state) {
   $records = $query->fetchAll();
   $apower_ids = array();
   $program_ids = array();
+
   if ($_GET['pid']) {
     foreach ($records as $record) {
-      if ($record->nid == $_GET['pid']){
-        $apower_ids[] = $record->apower_id;
-        $program_ids[] = $record->program_id;
+      if ($record->nid == $_GET['pid']) {
+        if (!in_array($record->apower_id, $apower_ids) && !in_array($record->program_id, $program_ids)) {
+          $apower_ids[] = $record->apower_id;
+          $program_ids[] = $record->program_id;
+        }
       }
     }
   }
+
   foreach ($records as $record) {
     if (!in_array($record->apower_id, $apower_ids) && !in_array($record->program_id, $program_ids) ) {
       $apower_ids[] = $record->apower_id;
       $program_ids[] = $record->program_id;
     }
   }
-dpm($apower_ids);
+
   gsb_public_brochure_list_write_to_apower($form, $form_state, $apower_ids);
 
 }
 function gsb_public_brochure_list_write_to_apower($form, &$form_state, $apower_ids) {
-  dpm($apower_ids);
+
   $options = _extract_select_options ($form_state['webform']['component_tree']['children'][17]['children'][1]['extra']['items']);
 
   // output key and value of chosen select option
@@ -156,11 +160,9 @@ function gsb_public_brochure_list_write_to_apower($form, &$form_state, $apower_i
   $params['comments']="";
   $params['key'] = variable_get('apower_key');
   $params['course_id']=$apower_ids;
-  dpm($params['course_id']);
   $paramStr = json_encode($params);
   $url = variable_get('apower_url');
   $ch = curl_init() ;
-  dpm($paramStr);
   curl_setopt ($ch, CURLOPT_POST, 1);
   curl_setopt ($ch, CURLOPT_POSTFIELDS,$paramStr);
   curl_setopt($ch, CURLOPT_URL, $url) ;
@@ -172,7 +174,6 @@ function gsb_public_brochure_list_write_to_apower($form, &$form_state, $apower_i
   #echo 'Curl error: ' . curl_error($ch);
   curl_close($ch) ;
   echo $response;
-  dpm($response);
 
 }
 
