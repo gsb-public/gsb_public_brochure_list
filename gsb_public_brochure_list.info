@@ -3,3 +3,9 @@ description = Custom checkboxes for program brochures.
 core = 7.x
 package = GSB
 project = "gsb_public_brochure_list"
+
+; Information added by drush on 2016-10-26
+version = "1.03"
+project = "gsb_public_brochure_list"
+datestamp = "1477491541"
+

@@ -139,7 +139,7 @@ function gsb_public_brochure_list_write_to_apower($form, &$form_state, $apower_i
   $params['submission_type']="brochure" ;  //"mailing" or "brochure"
   $params['salutation']=$chosen;
   $params['first_name']=$form_state['complete form']['submitted']['your_contact_information']['first_name']['#value'];
-  $params['middle_initial']="";
+  $params['middle_initial']=$form_state['complete form']['submitted']['your_contact_information']['middle_initial']['#value'];
   $params['last_name']=$form_state['complete form']['submitted']['your_contact_information']['last_name']['#value'];
   $params['title']=$form_state['complete form']['submitted']['your_contact_information']['job_title_or_position']['#value'];
   $params['email']=$form_state['complete form']['submitted']['your_contact_information']['email']['#value'];
