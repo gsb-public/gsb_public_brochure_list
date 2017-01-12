@@ -133,7 +133,6 @@ function gsb_public_brochure_list_write_to_apower($form, &$form_state, $apower_i
 
   $options = _extract_select_options ($form_state['webform']['component_tree']['children'][17]['children'][1]['extra']['items']);
   $gender_id = $form_state['complete form']['submitted']['your_contact_information']['gender']['#value'];
-  $gender_val = $form_state['complete form']['submitted']['your_contact_information']['gender']['#options'][$gender_id];
   // output key and value of chosen select option
   $chosen = $options[$form_state['complete form']['submitted']['your_contact_information']['prefix']['#value']];
   $params = array();
@@ -142,7 +141,7 @@ function gsb_public_brochure_list_write_to_apower($form, &$form_state, $apower_i
   $params['first_name']=$form_state['complete form']['submitted']['your_contact_information']['first_name']['#value'];
   $params['middle_initial']=$form_state['complete form']['submitted']['your_contact_information']['middle_initial']['#value'];
   $params['last_name']=$form_state['complete form']['submitted']['your_contact_information']['last_name']['#value'];
-  $params['gender']=$gender_id . "|" . $gender_val;
+  $params['gender']=$gender_id;
   $params['title']=$form_state['complete form']['submitted']['your_contact_information']['job_title_or_position']['#value'];
   $params['email']=$form_state['complete form']['submitted']['your_contact_information']['email']['#value'];
   $params['linkedin_url']=$form_state['complete form']['submitted']['your_contact_information']['linkedin_profile_url']['#value'];
