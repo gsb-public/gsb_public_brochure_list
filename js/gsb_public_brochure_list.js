@@ -7,9 +7,10 @@
         params[key] = value;
       });
       var program_id = params['pid'];
-      var name = 'input[name="submitted[brochure_list][' + program_id + ']"';
+      var name = 'input[name="submitted[brochure_list][' + program_id + ']"]';
+
       if ($(name).length > 0) {
-        $(name).attr('checked','checked');
+        $(name).prop('checked',true);
       }
       var $topic_checkBoxes = $('input[type=checkbox][name*=topic--]');
       $topic_checkBoxes.each(function () {var $topic = $("#" + $(this).attr("id"));
