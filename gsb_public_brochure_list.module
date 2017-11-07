@@ -94,7 +94,9 @@ function gsb_public_brochure_list_form_submit($form, &$form_state) {
 
   $select->condition('n.status', 1);
   $select->condition('n.type', 'program');
-  $select->condition('n.nid', $program_ids , 'IN');
+  if (isset($program_ids) && !empty($program_ids)) {
+    $select->condition('n.nid', $program_ids , 'IN');
+  }
   $select->condition('df.field_display_on_finder_select_value', 'visible');
   $select->isNotNull('ap.field_apower_id_value');
   $today = date("Y-m-d");
