@@ -13,6 +13,51 @@ function gsb_public_brochure_list_webform_select_options_info() {
 }
 
 /**
+ * Implements hook_token_info().
+ */
+function gsb_public_brochure_list_token_info() {
+  $types['brochure_list'] = array(
+    'name' => t("Brochure List Tokens"),
+    'description' => t("Tokens from the refresh database email."),
+  );  
+  $tokens = array();
+  $tokens['request_uri'] = array(
+    'name' => t('Brochure List Request URI'),
+    'description' => t('Get the request uri for the submitted form.'),
+  );
+  return array(
+    'types' => $types,
+    'tokens' => array(
+      'brochure_list' => $tokens,
+    ),
+  );  
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function gsb_public_brochure_list_tokens($type, $tokens, array $data = array(), array $options = array()) {
+  $replacements = array();
+  if ($type == 'brochure_list') {
+    foreach ($tokens as $name => $original) {
+      switch ($name) {
+        case 'request_uri':
+          if (!empty($data['brochure_list']) && !empty($data['brochure_list']['request_uri'])) {
+            $brochure_list_uri = $data['brochure_list']['request_uri'];
+          }
+          else
+          {
+            $brochure_list_uri = request_uri();
+            $replacements[$original] = $brochure_list_uri;
+          }
+          break;
+      }
+    }
+  }
+  return $replacements;
+}
+
+/**
  * Build an options list to be used with webforms select list based in drupal roles
  */
 function gsb_public_brochure_list_pre_build_brochure_list() {
@@ -110,7 +155,7 @@ function gsb_public_brochure_list_form_submit($form, &$form_state) {
   $apower_ids = array();
   $program_ids = array();
 
-  if ($_GET['pid']) {
+  if (!empty($_GET['pid'])) {
     foreach ($records as $record) {
       if ($record->nid == $_GET['pid']) {
         if (!in_array($record->apower_id, $apower_ids) && !in_array($record->program_id, $program_ids)) {
@@ -162,6 +207,23 @@ function gsb_public_brochure_list_write_to_apower($form, &$form_state, $apower_i
   $params['work_with_hr']="no"; //"yes" or "no";
   $params['comments']="";
   $params['key'] = variable_get('apower_key');
+
+  if (!empty($form_state['values']['submitted']['apower_ids_hidden']))
+  {
+    $parsed_url = parse_url($form_state['values']['submitted']['apower_ids_hidden']);
+    if (!empty($parsed_url['query']))
+    {
+      $query = $parsed_url['query'];
+      $pos = strpos($query, "=");
+      if ($pos != false)
+      {
+        $apower_ids = substr($query, $pos+1);
+        $apower_ids = urldecode($apower_ids);
+        $apower_ids = explode(",",$apower_ids);
+      }
+    }
+  }
+
   $params['course_id']=$apower_ids;
   $paramStr = json_encode($params);
   $url = variable_get('apower_url');
