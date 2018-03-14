@@ -121,55 +121,62 @@ function gsb_public_brochure_list_form_alter(&$form, &$form_state, $form_id)
 }
 
 function gsb_public_brochure_list_form_submit($form, &$form_state) {
-  $program_ids = ($form_state['complete form']['submitted']['brochure_list']['#value']);
-  $select = db_select('node','n');
-  $select->fields('n', array('title', 'nid'));
-  $select->leftJoin('field_data_field_program', 'pr', 'n.nid = pr.field_program_target_id AND pr.deleted = 0');
-  $select->addField('pr', 'field_program_target_id', 'program_id');
-  $select->leftJoin('field_data_field_display_on_finder_select', 'df', 'df.entity_id = pr.entity_id AND df.deleted = 0');
-  $select->leftJoin('field_data_field_apower_id', 'ap', 'ap.entity_id = pr.entity_id AND pr.deleted = 0');
-  $select->addField('ap', 'field_apower_id_value', 'apower_id');
-  //Dates
-  $select->leftJoin('field_data_field_instance_date', 'dt', 'dt.entity_id = pr.entity_id AND dt.deleted = 0');
-  $select->addField('dt', 'field_instance_date_value', 'start_date');
-  $select->addField('dt', 'field_instance_date_value2', 'end_date');
-  //Text Date
-  $select->leftJoin('field_data_field_instance_text', 'tdt', 'tdt.entity_id = pr.entity_id AND tdt.deleted = 0');
-  $select->addField('tdt', 'field_instance_text_value', 'text_date');
 
-  $select->condition('n.status', 1);
-  $select->condition('n.type', 'program');
-  if (isset($program_ids) && !empty($program_ids)) {
-    $select->condition('n.nid', $program_ids , 'IN');
-  }
-  $select->condition('df.field_display_on_finder_select_value', 'visible');
-  $select->isNotNull('ap.field_apower_id_value');
-  $today = date("Y-m-d");
-  $select->condition(db_or()->condition('dt.field_instance_date_value', $today, '>=')->isNotNull('tdt.field_instance_text_value'));
-  $select->orderBy('text_date','ASC');
-  $select->orderBy('program_id','ASC');
-  $select->orderBy('start_date','ASC');
-
-  $query = $select->execute();
-  $records = $query->fetchAll();
-  $apower_ids = array();
   $program_ids = array();
+  $apower_ids = array();
 
-  if (!empty($_GET['pid'])) {
-    foreach ($records as $record) {
-      if ($record->nid == $_GET['pid']) {
-        if (!in_array($record->apower_id, $apower_ids) && !in_array($record->program_id, $program_ids)) {
-          $apower_ids[] = $record->apower_id;
-          $program_ids[] = $record->program_id;
-        }
-      }
+  if (!empty($form_state['values']['submitted']['apower_ids_hidden'])) {
+    $parsed_url = parse_url($form_state['values']['submitted']['apower_ids_hidden']);
+    if (!empty($parsed_url['query']))
+    {
+      $query = $parsed_url['query'];
+      parse_str($query, $query_array);
+      $program_ids[0] = $query_array['pid'];
+      $apower_ids[0] = $query_array['aid'];
     }
   }
+  else {
 
-  foreach ($records as $record) {
-    if (!in_array($record->apower_id, $apower_ids) && !in_array($record->program_id, $program_ids) ) {
-      $apower_ids[] = $record->apower_id;
-      $program_ids[] = $record->program_id;
+    $program_ids = ($form_state['complete form']['submitted']['brochure_list']['#value']);
+
+    $select = db_select('node','n');
+    $select->fields('n', array('title', 'nid'));
+    $select->leftJoin('field_data_field_program', 'pr', 'n.nid = pr.field_program_target_id AND pr.deleted = 0');
+    $select->addField('pr', 'field_program_target_id', 'program_id');
+    $select->leftJoin('field_data_field_display_on_finder_select', 'df', 'df.entity_id = pr.entity_id AND df.deleted = 0');
+    $select->leftJoin('field_data_field_apower_id', 'ap', 'ap.entity_id = pr.entity_id AND pr.deleted = 0');
+    $select->addField('ap', 'field_apower_id_value', 'apower_id');
+    //Dates
+    $select->leftJoin('field_data_field_instance_date', 'dt', 'dt.entity_id = pr.entity_id AND dt.deleted = 0');
+    $select->addField('dt', 'field_instance_date_value', 'start_date');
+    $select->addField('dt', 'field_instance_date_value2', 'end_date');
+    //Text Date
+    $select->leftJoin('field_data_field_instance_text', 'tdt', 'tdt.entity_id = pr.entity_id AND tdt.deleted = 0');
+    $select->addField('tdt', 'field_instance_text_value', 'text_date');
+
+    $select->condition('n.status', 1);
+    $select->condition('n.type', 'program');
+    if (isset($program_ids) && !empty($program_ids)) {
+      $select->condition('n.nid', $program_ids , 'IN');
+    }
+    $select->condition('df.field_display_on_finder_select_value', 'visible');
+    $select->isNotNull('ap.field_apower_id_value');
+    $today = date("Y-m-d");
+    $select->condition(db_or()->condition('dt.field_instance_date_value', $today, '>=')->isNotNull('tdt.field_instance_text_value'));
+    $select->orderBy('text_date','ASC');
+    $select->orderBy('program_id','ASC');
+    $select->orderBy('start_date','ASC');
+
+    $query = $select->execute();
+    $records = $query->fetchAll();
+    $apower_ids = array();
+    $program_ids = array();
+
+    foreach ($records as $record) {
+      if (!in_array($record->apower_id, $apower_ids) && !in_array($record->program_id, $program_ids) ) {
+        $apower_ids[] = $record->apower_id;
+        $program_ids[] = $record->program_id;
+      }
     }
   }
 
@@ -181,7 +188,11 @@ function gsb_public_brochure_list_write_to_apower($form, &$form_state, $apower_i
   $options = _extract_select_options ($form_state['webform']['component_tree']['children'][17]['children'][1]['extra']['items']);
   $gender_id = $form_state['complete form']['submitted']['your_contact_information']['gender']['#value'];
   // output key and value of chosen select option
-  $chosen = $options[$form_state['complete form']['submitted']['your_contact_information']['prefix']['#value']];
+  if (empty($form_state['complete form']['submitted']['your_contact_information']['prefix']['#value'])) {
+    $chosen = "";
+  } else {
+    $chosen = $options[$form_state['complete form']['submitted']['your_contact_information']['prefix']['#value']];
+  }
   $params = array();
   $params['submission_type']="brochure" ;  //"mailing" or "brochure"
   $params['salutation']=$chosen;
@@ -207,22 +218,6 @@ function gsb_public_brochure_list_write_to_apower($form, &$form_state, $apower_i
   $params['work_with_hr']="no"; //"yes" or "no";
   $params['comments']="";
   $params['key'] = variable_get('apower_key');
-
-  if (!empty($form_state['values']['submitted']['apower_ids_hidden']))
-  {
-    $parsed_url = parse_url($form_state['values']['submitted']['apower_ids_hidden']);
-    if (!empty($parsed_url['query']))
-    {
-      $query = $parsed_url['query'];
-      $pos = strpos($query, "=");
-      if ($pos != false)
-      {
-        $apower_ids = substr($query, $pos+1);
-        $apower_ids = urldecode($apower_ids);
-        $apower_ids = explode(",",$apower_ids);
-      }
-    }
-  }
 
   $params['course_id']=$apower_ids;
   $paramStr = json_encode($params);
@@ -252,6 +247,9 @@ function _extract_select_options ($prefix) {
 
   // split each line into pairs of key and value
   foreach($pairs as $pair) {
+    if (empty($pair)) {
+      continue;
+    }
     $temp_array = explode('|', $pair);
     $options[trim($temp_array[0])] = $temp_array[1];
   }
