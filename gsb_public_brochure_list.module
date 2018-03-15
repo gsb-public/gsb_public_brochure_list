@@ -131,8 +131,10 @@ function gsb_public_brochure_list_form_submit($form, &$form_state) {
     {
       $query = $parsed_url['query'];
       parse_str($query, $query_array);
-      $program_ids[0] = $query_array['pid'];
-      $apower_ids[0] = $query_array['aid'];
+      $pids = urldecode($query_array['pid']);
+      $program_ids = explode(",",$pids);
+      $apids = urldecode($query_array['aid']);
+      $apower_ids = explode(",",$apids);
     }
   }
   else {
