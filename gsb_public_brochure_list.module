@@ -111,7 +111,7 @@ function gsb_public_brochure_list_pre_build_brochure_list() {
 function gsb_public_brochure_list_form_alter(&$form, &$form_state, $form_id)
 {
   // "webform_client_form_410146", "webform_client_form_459061"
-  $brochure_webform_ids = variable_get('brochure_webform_ids');
+  $brochure_webform_ids = variable_get('brochure_webform_ids', array());
 
   if(in_array($form['form_id']['#value'], $brochure_webform_ids)) {
     $form['#attached']['js'][] = drupal_get_path('module', 'gsb_public_brochure_list') . '/js/gsb_public_brochure_list.js';
