@@ -34,6 +34,17 @@ function gsb_public_brochure_list_token_info() {
 }
 
 /**
+ * Implements hook_cron().
+ */
+function gsb_public_brochure_list_cron() {
+  $archive_uri = variable_get('folder_clean_path', 'public://brochures');
+  $files_uri = file_scan_directory($archive_uri, '/.*\.zip$/');
+  foreach ($files_uri as $file_uri){
+    file_unmanaged_delete($file_uri->uri);
+  }
+}
+
+/**
  * Implements hook_tokens().
  */
 function gsb_public_brochure_list_tokens($type, $tokens, array $data = array(), array $options = array()) {
